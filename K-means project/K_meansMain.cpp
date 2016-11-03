@@ -159,11 +159,14 @@ int main (int argc, char *argv[])
 		fprintf(output,"\ntime = %f",end - start);
 		fclose(output);
 		*/
-		printf("d = %f\nt = %f\nCenters:\n",calculateDisBetweenCentroids(clusterReceieved[minCluster],k),(float)minCluster * dt);
-		for(int i = 0 ; i < k ; i++)
-			printf("%f   %f\n",clusterReceieved[minCluster][i].x,clusterReceieved[minCluster][i].y);
-		printf("\ntime = %f",end - start);
 		
+		output = fopen("output.txt","w");
+		fprintf(output,"d = %f\nt = %f\nCenters:\n",calculateDisBetweenCentroids(clusterReceieved[minCluster],k),(float)minCluster * dt);
+		for(int i = 0 ; i < k ; i++)
+			fprintf(output,"%f   %f\n",clusterReceieved[minCluster][i].x,clusterReceieved[minCluster][i].y);
+		fprintf(output,"\ntime = %f",end - start);
+		fclose(output);
+		printf("Done");
 		//Free allocations
 		free(startClusters);
 		free(endClusters);
