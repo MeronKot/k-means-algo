@@ -1,6 +1,12 @@
 #include "k-means_header.h"
 
 
+void checkInput(int n,int k,float dt,float interval,int limit,int numprocs)
+{
+	if(n <= 0 || k<= 0 || interval <= 0 || limit <= 0  || (k * numprocs) >= 1000)
+		printf("\nerror in input\n");
+}
+
 void chooseClusterToEachPoint(Point *points, Point *clusters,int* slaveClusters,float** distances,int n,int k)
 {
 	int i,j;
@@ -188,4 +194,15 @@ float distanceBetweenPoints(Point p1,Point p2)
 	y = p1.y - p2.y;
 
 	return sqrt(x*x + y*y);
+}
+
+void distance(Point *points,Point *clusters,float **distances,float n,float k,int rank,int numprocs)
+{
+	int i,j;
+		
+	for (i = 0 ; i < k ; i++)
+		for(j = 0 ; j < n ; j++)
+		{
+			distances[i][j] = sqrt(pow(points[j].x - clusters[i].x,2)+pow(points[j].y - clusters[i].y,2));
+		}
 }

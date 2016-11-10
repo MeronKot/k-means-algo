@@ -26,6 +26,7 @@ struct Point
 
 void error(Point *dev_points, Point *dev_clusters, float **dev_dis);
 
+void checkInput(int n,int k,float dt,float interval,int limit,int numprocs);
 cudaError_t distanceWithCuda(Point *points, Point *clusterPoints,  float **dis , int n, int k,int procId,int numprocs);
 
 void chooseClusterToEachPoint(Point *points, Point *clusters,int* slaveClusters,float** distances,int n,int k);
@@ -47,3 +48,5 @@ int findMinimum(float *disBetweenCentroids, int size);
 int findMinimumResult(Point **clusters,int intervals,int k);
 
 float distanceBetweenPoints(Point x,Point y);
+
+void distance(Point *points,Point *clusters,float **distances,float n,float k,int rank,int numprocs);
