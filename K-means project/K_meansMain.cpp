@@ -63,11 +63,11 @@ int main (int argc, char *argv[])
 		//para array for communication between processors.
 		position = n / (numprocs - 1);
 
-		initpara[0] = (int)position;
+		initpara[0] = (float)position;
 		initpara[1] = dt;
 		initpara[2] = interval;
-		initpara[3] = (int)k;
-		initpara[4] = (int)limit;
+		initpara[3] = (float)k;
+		initpara[4] = (float)limit;
 		
 
 		for (int i = 1 ; i < numprocs  ; i++)
@@ -75,7 +75,6 @@ int main (int argc, char *argv[])
 		for(int i = 1 ; i < numprocs ; i++)
 			MPI_Send(points + (i - 1) * position,position,POINT,i,0,MPI_COMM_WORLD);		
 		
-		//MPI_Barrier(MPI_COMM_WORLD);
 		//Array initializations and allocations
 		startClusters = (int*)malloc(n * sizeof(int));
 		endClusters = (int*)malloc(n * sizeof(int));
@@ -92,20 +91,14 @@ int main (int argc, char *argv[])
 			exit(0);
 		}
 		
-		initArray(startClusters,n);
-		initArray(endClusters,n);
+
 		//The first clusters will be the first k points.	
 		for(int i = 0 ; i < k ; i++)
 		{
 			clusterPoints[i].x = points[i].a + points[i].r;
 			clusterPoints[i].y = points[i].b;
 		}
-
-		//Send all the processors the cluster points
-		for(int i = 1 ; i < numprocs ; i++)
-			MPI_Send(clusterPoints,k,POINT,i,0,MPI_COMM_WORLD);
-	
-		//MPI_Barrier(MPI_COMM_WORLD);
+			
 		double start = MPI_Wtime();//Start measuring time.
 		
 		z = 0;//idx for the array of clusters.
@@ -114,13 +107,24 @@ int main (int argc, char *argv[])
 		{
 			for(int index = 0 ; index < n; index++)//Position calculation
 			{
-				points[index].x = points[index].a + (points[index].r * cos((2*3.14*m)/interval));
-				points[index].y = points[index].b + (points[index].r * sin((2*3.14*m)/interval));
+				points[index].x = points[index].a + (points[index].r * cos((2*M_PI*m)/interval));
+				points[index].y = points[index].b + (points[index].r * sin((2*M_PI*m)/interval));
 			}
+			for(int i = 0 ; i < k ; i++)
+			{
+				clusterPoints[i].x = points[i].x;
+				clusterPoints[i].y = points[i].y;
+			}
+			
+			for(int i = 1 ; i < numprocs ; i++)
+				MPI_Send(clusterPoints,k,POINT,i,0,MPI_COMM_WORLD);
+		
+			initArray(startClusters,n);
+			initArray(endClusters,n);
+
 			l=0;//idx for max iterations of k-means on specific position
 			while (1)
 			{				
-				//MPI_Barrier(MPI_COMM_WORLD);
 				//Receiving from all the procs their part of points to clusters job
 				for(int i = 1 ; i < numprocs ; i++)
 					MPI_Recv(endClusters+(position * (i - 1)),position,MPI_INT,i,0,MPI_COMM_WORLD,&status);
@@ -129,7 +133,7 @@ int main (int argc, char *argv[])
 				calculateNewClusters(points,endClusters,clusterPoints,k,n);
 
 				//Check if there is any change or below the limit
-				if((isDiffer(endClusters,startClusters,n) == 0) || l > limit)
+				if((isDiffer(endClusters,startClusters,n) == 0) || (l > limit))
 					done = TRUE;
 				else
 					for(int i = 0 ; i < n ; i++)
@@ -139,18 +143,17 @@ int main (int argc, char *argv[])
 				for(int i = 1 ; i < numprocs ; i++ )
 					MPI_Send(&done,1,MPI_INT,i,0,MPI_COMM_WORLD);
 
-				//MPI_Barrier(MPI_COMM_WORLD);
 				//Finish algo.
 				if(done == TRUE)
 					break;
+				
+				
 				//Continue algo again
 				for(int i = 1 ; i < numprocs ; i++ )
 					MPI_Send(clusterPoints,k,POINT,i,0,MPI_COMM_WORLD);
 
-				//MPI_Barrier(MPI_COMM_WORLD);
 				l++;
 			}
-		
 			//Recording iteration result for future calculation.
 			memcpy(clusterReceieved[z],clusterPoints,k * sizeof(Point));
 			done = FALSE;
@@ -169,6 +172,7 @@ int main (int argc, char *argv[])
 		fprintf(output,"\ntime = %f",end - start);
 		fclose(output);
 		printf("Done");
+
 		//Free allocations
 		free(startClusters);
 		free(endClusters);
@@ -205,9 +209,7 @@ int main (int argc, char *argv[])
 		
 		//Receiving from master part of points for calculation and the cluster points
 		MPI_Recv(slavePartOfPoints,(int)initpara[0],POINT,0,0,MPI_COMM_WORLD,&status);
-		MPI_Recv(clusterPoints,(int)initpara[3],POINT,0,0,MPI_COMM_WORLD,&status);
-		//MPI_Barrier(MPI_COMM_WORLD);
-		
+			
 		//Find distances from the points to clusters using cuda and decide the cluster for each point
 		//on every position of the points.
 		for(float m = 0 ; m < initpara[2]; m += initpara[1])
@@ -215,20 +217,25 @@ int main (int argc, char *argv[])
 			//Position calculation
 			for(int index = 0 ; index < (int)initpara[0]; index++)
 			{
-				slavePartOfPoints[index].x = slavePartOfPoints[index].a + (slavePartOfPoints[index].r * cos((2*3.14*m)/initpara[2]));
-				slavePartOfPoints[index].y = slavePartOfPoints[index].b + (slavePartOfPoints[index].r * sin((2*3.14*m)/initpara[2]));
+				slavePartOfPoints[index].x = slavePartOfPoints[index].a + (slavePartOfPoints[index].r * cos((2*M_PI*m)/initpara[2]));
+				slavePartOfPoints[index].y = slavePartOfPoints[index].b + (slavePartOfPoints[index].r * sin((2*M_PI*m)/initpara[2]));
 			}
 			
+			MPI_Recv(clusterPoints,(int)initpara[3],POINT,0,0,MPI_COMM_WORLD,&status);
+			
+			initArray(slaveClusters,(int)initpara[0]);						
 			//Calculate cluster to each point and send to master until it stops.
 			while(1)
 			{
-				distanceWithCuda(slavePartOfPoints,clusterPoints,distances,(int)initpara[0],(int)initpara[3],rank,numprocs - 1);
+				//distanceWithCuda(slavePartOfPoints,clusterPoints,distances,(int)initpara[0],(int)initpara[3],rank,numprocs - 1);
 				
+				distance(slavePartOfPoints,clusterPoints,distances,(int)initpara[0],(int)initpara[3],rank,numprocs - 1);
+
 				chooseClusterToEachPoint(slavePartOfPoints,clusterPoints,slaveClusters,distances,(int)initpara[0],(int)initpara[3]);
 
 				MPI_Send(slaveClusters,(int)initpara[0],MPI_INT,0,0,MPI_COMM_WORLD);
 
-				//MPI_Barrier(MPI_COMM_WORLD);
+				initArray(slaveClusters,(int)initpara[0]);						
 
 				MPI_Recv(&done,1,MPI_INT,0,0,MPI_COMM_WORLD,&status);
 
@@ -236,7 +243,6 @@ int main (int argc, char *argv[])
 					break;
 
 				MPI_Recv(clusterPoints,(int)initpara[3],POINT,0,0,MPI_COMM_WORLD,&status);
-				//MPI_Barrier(MPI_COMM_WORLD);
 			}//End calculation
 		}//End iterations
 		

@@ -11,7 +11,7 @@ void chooseClusterToEachPoint(Point *points, Point *clusters,int* slaveClusters,
 {
 	int i,j;
 	int cluster = 0;
-	float min;
+	float min=0;
 
 	//Run over all the points and decide which cluster is closer to every point.
 #pragma parallel omp for private(i)
@@ -34,8 +34,8 @@ void chooseClusterToEachPoint(Point *points, Point *clusters,int* slaveClusters,
 float calculateDisBetweenCentroids(Point *clusters,int k)
 {
 	int i,j;
-	float x,y;
-	float mindis;
+	float x=0,y=0;
+	float mindis=0;
 
 	mindis = distanceBetweenPoints(clusters[0],clusters[1]);
 	for(i = 0 ; i < k ; i++)
@@ -43,7 +43,7 @@ float calculateDisBetweenCentroids(Point *clusters,int k)
 		{
 			if(i != j)
 			{
-				float temp;
+				float temp=0;
 				x = clusters[i].x - clusters[j].x;
 				y = clusters[i].y - clusters[j].y;
 				temp = sqrt(x*x + y*y);
@@ -53,25 +53,7 @@ float calculateDisBetweenCentroids(Point *clusters,int k)
 		}
 	return mindis;
 }
-	/*
-	//Run over all the clusters and sum the distances between the points of the clusters.
-	for (i = 0 ; i < k ; i++)
-	{
-		if((i + 1) < k)
-		{
-			x = clusters[i].x - clusters[i+1].x;
-			y = clusters[i].y - clusters[i+1].y;
-			dis += sqrt(x*x + y*y);
-		}
-		else
-		{
-			x = clusters[i].x - clusters[0].x;
-			y = clusters[i].y - clusters[0].y;
-			dis += sqrt(x*x + y*y);
-		}
-	}
-	return dis;
-	*/
+
 int findMinimum(float *disBetweenCentroids, int size)
 {
 	int i = 0;
@@ -133,11 +115,6 @@ void calculateNewClusters(Point *points,int *endClusters,Point *clusters,int k,i
 			newClusters[i].x /= count[i];
 			newClusters[i].y /= count[i];
 		}
-		else
-		{
-			newClusters[i].x = clusters[i].x;
-			newClusters[i].y = clusters[i].y;
-		}
 	}
 	//Return the result to given clusters
 	for(i = 0 ; i < k ; i++)
@@ -177,6 +154,7 @@ int findMinimumResult(Point **clusters,int intervals,int k)
 	for (i = 0 ; i < intervals ; i++)
 	{
 		minDis[i] = calculateDisBetweenCentroids(clusters[i],k);
+		//printf("\n%d   %f\n",i,minDis[i]);
 	}
 }
 	//Find the minimum among them
@@ -188,7 +166,7 @@ int findMinimumResult(Point **clusters,int intervals,int k)
 
 float distanceBetweenPoints(Point p1,Point p2)
 {
-	float x,y,dis;
+	float x=0,y=0;
 	
 	x = p1.x - p2.x;
 	y = p1.y - p2.y;
